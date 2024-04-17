@@ -92,7 +92,7 @@ module testbench();
    initial
      begin
 	string memfilename;
-        memfilename = {"../../lab1/testing/lh.memfile"};
+        memfilename = {"../riscvtest/bne-test.memfile"};
 	$readmemh(memfilename, dut.imem.RAM);
      end
    
@@ -233,7 +233,7 @@ module controller(input  logic		 clk, reset,
                             {RegWriteD, ResultSrcD, MemWriteD, JumpD, BranchD, ALUControlD, ALUSrcD,funct3D},
                             {RegWriteE, ResultSrcE, MemWriteE, JumpE, BranchE, ALUControlE, ALUSrcE,Funct3E});
 
-   assign PCSrcE = (BranchE & ZeroE) | JumpE;
+   assign PCSrcE = (BranchActionE & ZeroE) | JumpE;
    assign AddUIPCE = (opD == 7'b0010111); //auipc
    assign MemAccessM = ((opD == 7'b0000011) || (opD == 7'b0100011)); //load and store
 
@@ -251,12 +251,12 @@ module controller(input  logic		 clk, reset,
 
     always_comb
     case(Funct3E)
-      3'b000: BranchActionE = ZeroE; //beq
-      3'b001: BranchActionE = ~ZeroE; //bne
-      3'b100: BranchActionE = NegativeE ^ VE; //blt
-      3'b101: BranchActionE = ~(NegativeE ^ VE); //bge
-      3'b110: BranchActionE = ~CarryE; //bltu
-      3'b111: BranchActionE = CarryE; //bgeu
+      3'b000: BranchActionE = BranchE & ZeroE; //beq
+      3'b001: BranchActionE = BranchE & ~ZeroE; //bne
+      3'b100: BranchActionE = BranchE & (NegativeE ^ VE); //blt
+      3'b101: BranchActionE = BranchE & ~(NegativeE ^ VE); //bge
+      3'b110: BranchActionE = BranchE & ~CarryE; //bltu
+      3'b111: BranchActionE = BranchE & CarryE; //bgeu
       default: BranchActionE = 1'b0; 
     endcase;
 endmodule
