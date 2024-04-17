@@ -92,7 +92,7 @@ module testbench();
    initial
      begin
 	string memfilename;
-        memfilename = {"../riscvtest/bne-test.memfile"};
+        memfilename = {"../../lab1/testing/lui.memfile"};
 	$readmemh(memfilename, dut.imem.RAM);
      end
    
@@ -151,7 +151,7 @@ module riscv(input  logic        clk, reset,
    logic [2:0] funct3D;
    logic 			 funct7b5D;
    logic [2:0] ImmSrcD;
-   logic 			 CarryE,NegativeE,VE,ZeroE;
+   logic 			 CE, NE, VE, ZeroE;
    logic       PCSrcE;
    logic [3:0] ALUControlE;
    logic       AddUIPCE;
@@ -169,14 +169,14 @@ module riscv(input  logic        clk, reset,
 
    controller c(clk, reset,
 		opD, funct3D, funct7b5D, ImmSrcD,
-		FlushE,CarryE,NegativeE, VE, ZeroE, PCSrcE, ALUControlE, ALUSrcE, ResultSrcEb0,
+		FlushE,CE,NE, VE, ZeroE, PCSrcE, ALUControlE, ALUSrcE, ResultSrcEb0,
 		MemWriteM,AddUIPCE, RegWriteM, Funct3M, 
 		Funct3W,RegWriteW, ResultSrcW, JumpE);
 
    datapath dp(clk, reset,
                StallF, PCF, InstrF,
 	       opD, funct3D, funct7b5D, StallD, FlushD, ImmSrcD,
-	       FlushE, ForwardAE, ForwardBE, PCSrcE, ALUControlE, ALUSrcE,CarryE,NegativeE,VE, ZeroE,
+	       FlushE, ForwardAE, ForwardBE, PCSrcE, ALUControlE, ALUSrcE,CE,NE,VE, ZeroE,
                MemWriteM, WriteDataM, ALUResultM, ReadDataM, Funct3M,
                RegWriteW,AddUIPCE, ResultSrcW, Funct3W,
                Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW,Mask, JumpE);
@@ -196,7 +196,7 @@ module controller(input  logic		 clk, reset,
                   output logic [2:0] ImmSrcD,
                   // Execute stage control signals
                   input logic 	     FlushE, 
-                  input logic 	     CarryE,NegativeE,VE,ZeroE, 
+                  input logic 	     CE, NE, VE, ZeroE, 
                   output logic 	     PCSrcE, // for datapath and Hazard Unit
                   output logic [3:0] ALUControlE, 
                   output logic [1:0] ALUSrcE,
@@ -253,10 +253,10 @@ module controller(input  logic		 clk, reset,
     case(Funct3E)
       3'b000: BranchActionE = BranchE & ZeroE; //beq
       3'b001: BranchActionE = BranchE & ~ZeroE; //bne
-      3'b100: BranchActionE = BranchE & (NegativeE ^ VE); //blt
-      3'b101: BranchActionE = BranchE & ~(NegativeE ^ VE); //bge
-      3'b110: BranchActionE = BranchE & ~CarryE; //bltu
-      3'b111: BranchActionE = BranchE & CarryE; //bgeu
+      3'b100: BranchActionE = BranchE & (NE ^ VE); //blt
+      3'b101: BranchActionE = BranchE & ~(NE ^ VE); //bge
+      3'b110: BranchActionE = BranchE & ~CE; //bltu
+      3'b111: BranchActionE = BranchE & CE; //bgeu
       default: BranchActionE = 1'b0; 
     endcase;
 endmodule
@@ -350,7 +350,7 @@ module datapath(input logic clk, reset,
                 input logic 	    PCSrcE,
                 input logic [3:0]   ALUControlE,
                 input logic [1:0] 	    ALUSrcE,
-                output logic 	    CarryE, NegativeE, VE, ZeroE,
+                output logic 	    CE, NE, VE, ZeroE,
                 // Memory stage signals
                 input logic 	    MemWriteM, 
                 output logic [31:0] WriteDataM, ALUResultM,
@@ -429,7 +429,7 @@ module datapath(input logic clk, reset,
    mux2   #(32)  srcbmux(WriteDataE, ImmExtE, ALUSrcE[0], SrcBE);
    store         subwrite(WriteDataInputM,Funct3M[1:0],ALUResultM[1:0],WriteDataM,Mask); 
    load          subread(ReadDataInputW,Funct3W,ALUResultW[1:0],ReadDataW); 
-   alu           alu(SrcAE, SrcBE, ALUControlE, ALUResultE, CarryE, NegativeE, VE, ZeroE);
+   alu           alu(SrcAE, SrcBE, ALUControlE, ALUResultE, CE, NE, VE, ZeroE);
    mux2   #(32)  jalrmux(PCE, ForwardAResult, ALUSrcE[0] ,PCSrcAE);  // jalr vs jal
    adder         branchadd(ImmExtE, PCSrcAE, PCTargetE);
   
