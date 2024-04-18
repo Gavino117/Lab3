@@ -189,23 +189,23 @@ endmodule
 
 
 module controller(input  logic		 clk, reset,
-                  // Decode stage control signals
+                  //Decode
                   input logic [6:0]  opD,
                   input logic [2:0]  funct3D,
                   input logic 	     funct7b5D,
                   output logic [2:0] ImmSrcD,
-                  // Execute stage control signals
+                  //Execute
                   input logic 	     FlushE, 
                   input logic 	     CE, NE, VE, ZeroE, 
                   output logic 	     PCSrcE, // for datapath and Hazard Unit
                   output logic [3:0] ALUControlE, 
                   output logic [1:0] ALUSrcE,
                   output logic [1:0] ResultSrcEb0, // for Hazard Unit
-                  // Memory stage control signals
+                  //Memory
                   output logic 	     MemWriteM, AddUIPCE,
                   output logic 	     RegWriteM, // for Hazard Unit				  
                   output logic[2:0]  Funct3M,
-                  // Writeback stage control signals
+                  //Writeback
                   output logic[2:0]  Funct3W,
                   output logic 	     RegWriteW, // for datapath and Hazard Unit
                   output logic [1:0] ResultSrcW,
@@ -299,12 +299,12 @@ module aludec(input  logic       opb5,
               output logic [3:0] ALUControl);
 
    logic 			 RtypeSub;
-   assign RtypeSub = funct7b5 & opb5;  // TRUE for R-type subtract instruction
+   assign RtypeSub = funct7b5 & opb5; // subtract R-type
    assign RtypeSRA = funct7b5 & opb5;
 
   always_comb
       case(ALUOp)
-        2'b00: ALUControl = 4'b0000; // addition, auipc
+        2'b00: ALUControl = 4'b0000; // auipc and addition
         2'b01: ALUControl = 4'b0001; // subtraction
         2'b10: case(funct3) // R–type or I–type ALU
                 3'b000: if (RtypeSub)
@@ -445,7 +445,6 @@ module datapath(input logic clk, reset,
                       {ALUResultM, ReadDataM, RdM, PCPlus4M},
                       {ALUResultW, ReadDataInputW, RdW, PCPlus4W});
    mux3   #(32)  resultmux(ALUResultW, ReadDataW, PCPlus4W, ResultSrcW, ResultW);	
-   //assign funct3W   = InstrW[14:12];
 endmodule
 
 // Hazard Unit: forward, stall, and flush
@@ -487,11 +486,6 @@ module regfile(input  logic        clk,
 
    logic [31:0] 		   rf[31:0];
 
-   // three ported register file
-   // read two ports combinationally (A1/RD1, A2/RD2)
-   // write third port on rising edge of clock (A3/WD3/WE3)
-   // write occurs on falling edge of clock
-   // register 0 hardwired to 0
 
    always_ff @(negedge clk)
      if (we3) rf[a3] <= wd3;	
@@ -620,8 +614,6 @@ module dmem (input  logic        clk, we,
    
    assign rd = RAM[a[31:2]]; // word aligned
    always_ff @(posedge clk)
-     // if (we) RAM[a[31:2]] <= wd;
-     // if (we) RAM[a[31:2]] <= (rd & ~BitMask) | wd; 
      if (we) 
      begin 
       if (Mask == 4'b0001) RAM[a[31:2]][7:0] <= wd[7:0];
@@ -634,7 +626,7 @@ module dmem (input  logic        clk, we,
      end
 endmodule // dmem
 
-module store(input   logic [31:0]  ToWrite,  //added by us
+module store(input   logic [31:0]  ToWrite, 
                     input   logic [1:0]   Funct3_2, ByteAdr,
                     output  logic [31:0]  WriteData,
                     output  logic [3:0]   Mask);
@@ -681,11 +673,11 @@ endmodule
       Word = ReadData;
 
       case(Funct3)
-      3'b000: FromRead = {{24{Byte[7]}},Byte};          //lb
-      3'b100: FromRead = {{24{1'b0}},Byte};             //lbu
+      3'b000: FromRead = {{24{Byte[7]}},Byte};    //lb
+      3'b100: FromRead = {{24{1'b0}},Byte};          //lbu
       3'b001: FromRead = {{16{Halfword[15]}},Halfword}; //lh
-      3'b101: FromRead = {{16{1'b0}},Halfword};         //lhu
-      3'b010: FromRead = Word;                          //lw
+      3'b101: FromRead = {{16{1'b0}},Halfword};      //lhu
+      3'b010: FromRead = Word;                  //lw
       default: FromRead = 32'hxxxxxxxx;
       endcase
     end
@@ -701,7 +693,7 @@ module alu(input  logic [31:0] a, b,
            output logic        zero);
 
    logic [31:0] 	       condinvb, sum;
-   logic 		       isAddSub;       // true when is add or sub
+   logic 		       isAddSub;       
 
    assign condinvb = alucontrol[0] ? ~b : b;
    assign sum = a + condinvb + alucontrol[0];
