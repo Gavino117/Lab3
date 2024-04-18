@@ -220,7 +220,7 @@ module controller(input  logic		 clk, reset,
    logic [1:0] 			     ALUOpD;
    logic [3:0] 			     ALUControlD;
    logic [1:0]     ALUSrcD;
-   logic           BranchActionE;
+   logic           BranchMux;
    logic[2:0]           Funct3E;
    
    // Decode stage logic
@@ -233,7 +233,7 @@ module controller(input  logic		 clk, reset,
                             {RegWriteD, ResultSrcD, MemWriteD, JumpD, BranchD, ALUControlD, ALUSrcD,funct3D},
                             {RegWriteE, ResultSrcE, MemWriteE, JumpE, BranchE, ALUControlE, ALUSrcE,Funct3E});
 
-   assign PCSrcE = (BranchActionE & ZeroE) | JumpE;
+	assign PCSrcE = (BranchMux & BranchE) | JumpE;
    assign AddUIPCE = (opD == 7'b0010111); //auipc
    assign MemAccessM = ((opD == 7'b0000011) || (opD == 7'b0100011)); //load and store
 
@@ -251,13 +251,13 @@ module controller(input  logic		 clk, reset,
 
     always_comb
     case(Funct3E)
-      3'b000: BranchActionE = BranchE & ZeroE; //beq
-      3'b001: BranchActionE = BranchE & ~ZeroE; //bne
-      3'b100: BranchActionE = BranchE & (NE ^ VE); //blt
-      3'b101: BranchActionE = BranchE & ~(NE ^ VE); //bge
-      3'b110: BranchActionE = BranchE & ~CE; //bltu
-      3'b111: BranchActionE = BranchE & CE; //bgeu
-      default: BranchActionE = 1'b0; 
+      3'b000: BranchMux = ZeroE; //beq
+      3'b001: BranchMux = ~ZeroE; //bne
+      3'b100: BranchMux = (NE ^ VE); //blt
+      3'b101: BranchMux = ~(NE ^ VE); //bge
+      3'b110: BranchMux = ~CE; //bltu
+      3'b111: BranchMux = CE; //bgeu
+      default: BranchMux = 1'b0; 
     endcase;
 endmodule
 
